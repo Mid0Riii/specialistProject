@@ -379,22 +379,4 @@
     {#    预留脚本block 可以实现基础该页面，添加自定义脚本#}
 {% endblock %}
 </body>
-<script>
-    function refresh(){
-        window.location.reload();
-    }
-    //自定义条件submitted，当有表单提交时触发
-var submitted = false;
-    var autoTime;               //定时器
-    //每三秒自执行
-    setTimeout(function() {
-        setInterval(function () {
-            if (submitted) {
-                submitted=false;
-                window.location.reload();
-            }
-        }, 1000)
-    },5000);
-
-</script>
 </html>

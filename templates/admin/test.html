@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<div id="ageChart" style="width: 1000px;height: 1000px">
+
+                </div>
+
+</body>
+<script src="echarts.js"></script>
+<script>
+    function initChart() {
+            var ageChart = echarts.init(document.getElementById('ageChart'));
+            console.log(ageChart);
+            let ageChartOption = {
+                title: {
+                    text: '年龄统计',
+                    left: 'center'
+                },
+                series: [
+                    {
+                        name: '姓名',
+                        type: 'pie',
+                        radius: '35',
+                        center: ['40%', '50%'],
+                        data: [
+                            {name: "test", value: 5},
+                            {name: "test1", value: 5},
+                            {name: "test2", value: 5},
+                            {name: "test3", value: 5},
+                        ],
+                        emphasis: {
+                            itemStyle: {
+                                shadowBlur: 10,
+                                shadowOffsetX: 0,
+                                shadowColor: 'rgba(0, 0, 0, 0.5)'
+                            }
+                        }
+                    }
+                ]
+            };
+            ageChart.setOption(ageChartOption);
+        }
+        initChart()
+</script>
+</html>

@@ -1,0 +1,205 @@
+{% extends "admin/base_site.html" %}
+
+{% block extrastyle %}
+    {{ block.super }}
+{% endblock %}
+
+{% block extrahead %}
+    {{ block.super }}
+    {{ media.js }}
+{% endblock %}
+
+{% block bodyclass %}{{ block.super }} app-{{ opts.app_label }} model-{{ opts.model_name }} change-list{% endblock %}
+
+
+{% block coltype %}flex{% endblock %}
+{% block content_title %}
+
+{% endblock %}
+{% block content %}
+    {% load static %}
+    <script src="{% static '/admin/js/echarts.js' %}"></script>
+    <div id="statistic" v-loading="loading">
+        {% csrf_token %}
+        <p style="font-size: 2.5rem !important;">考官数据管理</p>
+        <el-dialog title="退休考官" :visible.sync="retiredDialog">
+            <div v-if="!retired">当前无退休（年龄大于等于60岁）考官</div>
+            <div v-if="retired">
+                <el-table :data="retiredData">
+                    <el-table-column prop="name" label="姓名" width="200"></el-table-column>
+                    <el-table-column prop="id" label="id"></el-table-column>
+                </el-table>
+                <span slot="footer" class="dialog-footer"></span>
+            </div>
+            <div style="margin-top: 20px">
+                <el-button @click="retiredDialog = false">取 消</el-button>
+                <el-button v-if="retired" type="danger" @click="deleteRetired">删除考官信息</el-button>
+            </div>
+        </el-dialog>
+        <el-collapse v-model="activeNames">
+            <el-collapse-item title="常用操作" name="1">
+                <el-tooltip class="item" effect="dark" content="查询年龄在60岁以上的考官并删除" placement="bottom-start">
+                    <el-button type="warning" @click="checkSpecialist" round>考官有效性校验</el-button>
+                </el-tooltip>
+                <el-tooltip class="item" effect="dark" content="更新考官年龄" placement="bottom-start">
+                    <el-button type="primary" @click="refreshAge" round>年龄更新</el-button>
+                </el-tooltip>
+            </el-collapse-item>
+            <el-collapse-item title="统计信息" name="2">
+                <el-select v-model="selectedValue0" filterable label="所学专业" placeholder="所学专业"
+                           style="width: 10rem">
+                    <el-option
+                            v-for="item in option"
+                            :key="item.value"
+                            :label="item.label"
+                            :value="item.value">
+                    </el-option>
+                </el-select>
+                <el-select v-model="selectedValue1" filterable label="从事专业1" placeholder="从事专业1"
+                           style="width: 10rem">
+                    <el-option
+                            v-for="item in option"
+                            :key="item.value"
+                            :label="item.label"
+                            :value="item.value">
+                    </el-option>
+                </el-select>
+                <el-select v-model="selectedValue2" filterable label="从事专业2" placeholder="从事专业2"
+                           style="width: 10rem">
+                    <el-option
+                            v-for="item in option"
+                            :key="item.value"
+                            :label="item.label"
+                            :value="item.value">
+                    </el-option>
+                </el-select>
+                <el-button type="primary" @click="getAgeSpan" round>查询年龄段人数</el-button>
+
+                <el-table :data="ageSpan">
+                    <el-table-column prop="name" label="年龄范围" width="200"></el-table-column>
+                    <el-table-column prop="value" label="人数"></el-table-column>
+                </el-table>
+            </el-collapse-item>
+        </el-collapse>
+    </div>
+    <script>
+        new Vue({
+            el: '#statistic',
+            data: {
+                option: [],
+                value: '',
+                ageSpan: '',
+                activeNames: '1',
+                retiredData: [],
+                retiredDialog: false,
+                retiredIds: [],
+                retired: true,
+                loading: false,
+                selectedValue0: null,
+                selectedValue1: null,
+                selectedValue2: null,
+
+            },
+            created: function () {
+                let _this = this;
+                let dic = {{dic | safe}};
+                let categories = dic.categories;
+                _this.ageSpan = dic.ageSpan;
+                console.log(_this.ageSpan);
+                categories.forEach(function (c) {
+                    _this.option.push({
+                        value: c,
+                        label: c,
+                    })
+                });
+            },
+            methods: {
+                checkSpecialist: function () {
+                    let _this = this;
+                    let xhr = new XMLHttpRequest();
+                    let url = window.location.href + 'check/';
+                    _this.loading = true;
+                    xhr.open('GET', url, true);
+                    xhr.send();
+                    xhr.onreadystatechange = function () {
+                        if (xhr.readyState === 4 && (xhr.status === 200 || xhr.status === 304)) {
+                            _this.retiredData = eval(JSON.parse(xhr.responseText));
+                            for (let i = 0; i < _this.retiredData.length; i++) {
+                                _this.retiredIds.push(_this.retiredData[i].id)
+                            }
+                        }
+                        _this.loading = false;
+                    };
+                    _this.retiredDialog = true;
+                    if (_this.retiredData.length === 0) {
+                        _this.retired = false;
+                    }
+                },
+                deleteRetired: function () {
+                    let _this = this;
+                    let xhr = new XMLHttpRequest();
+                    let url = window.location.href + 'check/';
+                    let csrf = $('input[name="csrfmiddlewaretoken"]').val();
+                    _this.retired = true;
+                    _this.loading = true;
+                    xhr.open('POST', url, true);
+                    xhr.setRequestHeader("Content-type", "application/json");
+                    xhr.setRequestHeader('X-CSRFToken', csrf);
+                    let data = {
+                        "data": _this.retiredIds,
+                        "csrfmiddlewaretoken": "{{ csrf_token }}"
+                    };
+                    xhr.send(JSON.stringify(data));
+                    xhr.onreadystatechange = function () {
+                        if (xhr.readyState === 4 && (xhr.status === 200 || xhr.status === 304)) {
+                            _this.$message({message: '删除成功', type: 'success'});
+                            _this.retiredDialog = false;
+                            _this.loading = false;
+                        }
+                    };
+                },
+                refreshAge: function () {
+                    let _this = this;
+                    let xhr = new XMLHttpRequest();
+                    let url = window.location.href + 'refreshage/';
+                    _this.loading = true;
+                    xhr.open('GET', url, true);
+                    xhr.send();
+                    xhr.onreadystatechange = function () {
+                        if (xhr.readyState === 4 && (xhr.status === 200 || xhr.status === 304)) {
+                            _this.$message({message: '更新成功', type: 'success'});
+                            _this.retiredDialog = false;
+                            _this.loading = false;
+                        }
+                    };
+                },
+                getAgeSpan:function () {
+                    let _this = this;
+                    let xhr = new XMLHttpRequest();
+                    let url = window.location.href + _this.selectedValue0+'-'+_this.selectedValue1+'-'+_this.selectedValue2;
+                    _this.loading = true;
+                    xhr.open('GET', url, true);
+                    xhr.send();
+                    xhr.onreadystatechange = function () {
+                        if (xhr.readyState === 4 && (xhr.status === 200 || xhr.status === 304)) {
+                            console.log(eval(JSON.parse(xhr.responseText)));
+                            _this.ageSpan = eval(JSON.parse(xhr.responseText))
+                            console.log(_this.ageSpan)
+                        }
+                        _this.loading = false;
+                    };
+                }
+
+            },
+            watch: {}
+        })
+    </script>
+    <style>
+        #statistic {
+            padding: 50px;
+        }
+    </style>
+
+
+
+{% endblock %}

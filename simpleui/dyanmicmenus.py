@@ -35,6 +35,11 @@ def get_menu_config():
 
             },
             {
+                'name':'考官数据管理',
+                'icon':'fas fa-chart-bar',
+                'url':'/select/statistic',
+            },
+            {
                 'name':'根据随机数生成考官',
                 'icon':'fas fa-random',
                 'url':'select/upload',

@@ -1,12 +1,12 @@
 {% extends "admin/base_site.html" %}
 
 {% block extrastyle %}
-    {{ block.super }}
+{{ block.super }}
 {% endblock %}
 
 {% block extrahead %}
-    {{ block.super }}
-    {{ media.js }}
+{{ block.super }}
+{{ media.js }}
 {% endblock %}
 
 {% block bodyclass %}{{ block.super }} app-{{ opts.app_label }} model-{{ opts.model_name }} change-list{% endblock %}
@@ -17,228 +17,248 @@
 
 {% endblock %}
 {% block content %}
-    <div id="randomselect">
-        <el-row>
-            <el-col :xs="23" :lg="14">
-                <el-form ref="form" :model="form" label-width="80px" :rules="rules">
-                    <p style="font-size: 2.5rem !important;">随机抽取考官</p>
+<div id="randomselect">
+    <p style="font-size: 2.5rem !important;">随机抽取考官</p>
+
+    <el-form ref="forms" :model="forms" label-width="80px">
+
+        <el-row v-for="(item,index) in forms">
+            <div style="margin-top: 20px">
+                {% verbatim %}
+                <div style=" margin-bottom: 10px">
+                    <span style="font-size: 20px!important;">第{{ index+1 }}场</span>
+                    <span style="margin-left: 500px">
+                                <el-button type="primary" @click="addForm">增加</el-button>
+                                <el-button v-if="index != 0" style="margin-left: 5px" type="danger"
+                                           icon="el-icon-delete" @click="deleteForm(index)">删除</el-button>
+                            </span>
+                </div>
+                {% endverbatim %}
+                <el-col :xs="23" :lg="14">
                     <div>
                         {% csrf_token %}
-                        <el-form-item label="类别" prop="selectedValue">
-                            <el-select v-model="form.selectedValue" filterable label="类别" placeholder="选择类别"
+                        <el-form-item label="类别" required>
+                            <el-select v-model="forms[index].selectedValue" filterable label="类别" placeholder="选择类别"
                                        style="width: 30rem">
                                 <el-option
-                                        v-for="item in form.options"
+                                        v-for="item in option"
                                         :key="item.value"
                                         :label="item.label"
                                         :value="item.value">
                                 </el-option>
                             </el-select>
                         </el-form-item>
-                        <el-form-item label="人数" prop="size" required>
-                            <el-input-number v-model.number="form.size" :min="1"></el-input-number>
+                        <el-form-item label="人数">
+                            <el-input-number v-model.number="forms[index].size" :min="1"></el-input-number>
                         </el-form-item>
                         <el-form-item label="招聘单位">
-                            <el-input v-model="form.company" placeholder="系统将不抽取此单位的考官"></el-input>
-                        </el-form-item>
-                        <el-form-item>
-                            <el-button type="primary" @click="submitForm('form')">生成随机名单</el-button>
-                            <el-button type="info" @click="submitPrint">导出名单至excel</el-button>
-
+                            <el-input v-model="forms[index].company"  placeholder="系统将不抽取此单位的考官"></el-input>
                         </el-form-item>
                     </div>
-                </el-form>
-            </el-col>
+                </el-col>
+            </div>
         </el-row>
-        <el-table
-                :data="tableData"
-                style="width: 100%;min-width: 700px"
-                stripe
-        >
-            <el-table-column
-                    fixed
-                    type="index"
-                    label="id"
-                    width="100">
-            </el-table-column>
-            <el-table-column
-                    fixed
-                    prop="spe_name"
-                    label="姓名"
-                    width="120">
-            </el-table-column>
-            <el-table-column
-                    prop="spe_company"
-                    label="工作单位"
-                    width="250">
-            </el-table-column>
-            <el-table-column
-                    prop="spe_title"
-                    label="职称"
-                    width="120">
-            </el-table-column>
-            <el-table-column
-                    prop="spe_job"
-                    label="职务"
-                    width="120">
-            </el-table-column>
-            <el-table-column
-                    prop="spe_station"
-                    label="受聘岗位"
-                    width="120">
-            </el-table-column>
-            <el-table-column
-                    prop="spe_edu"
-                    label="学历"
-                    width="120">
-            </el-table-column>
-            <el-table-column
-                    prop="spe_major"
-                    label="专业"
-                    width="120">
-            </el-table-column>
-            <el-table-column
-                    prop="spe_ctg1"
-                    label="所从事专业1"
-                    width="350">
-            </el-table-column>
-            <el-table-column
-                    prop="spe_ctg2"
-                    label="所从事专业2"
-                    width="350">
-            </el-table-column>
-            <el-table-column
-                    fixed="right"
-                    prop="spe_tel"
-                    label="联系电话"
-                    width="120">
-            </el-table-column>
-            <el-table-column
-                    prop="spe_info"
-                    label="备注"
-                    width="120">
-            </el-table-column>
-        </el-table>
+    </el-form>
+    <el-button type="primary" @click="submitForm('form')">生成随机名单</el-button>
 
-    </div>
-    <script type="text/javascript">
-        $(".object-tools").hide().find('li a').each(function () {
-            _action.exts.push({
-                name: $(this).text(),
-                url: $(this).attr('href')
-            })
-        });
-        if (parent.addEvent) {
-            parent.addEvent('title', '随机抽取考官')
-        }
-        new Vue({
-            el: '#randomselect',
-            data: {
-                form: {
-                    options: [],
-                    selectedValue: "",
-                    size: "",
-                    company: null,
-                },
-                rules: {
-                    selectedValue: [{required: true, message: '请选择类型', trigger: 'change'}],
-                },
-                tableData: [],
-                pks: [],
-            },
-            created: function () {
-                let _this = this;
-                let dic = {{ dic|safe }};
-                let categories = dic.categories;
-                categories.forEach(function (c) {
-                    _this.form.options.push({
-                        value: c,
-                        label: c,
-                    })
-                });
-            },
-            methods: {
-                submitForm(formName) {
-                    let _this = this;
-                    _this.tableData = [];
-                    _this.pks = [];
-                    _this.$refs[formName].validate((valid) => {
-                        if (valid) {
-                            let csrf = $('input[name="csrfmiddlewaretoken"]').val();
-                            let data = {
-                                "selectedValue": _this.form.selectedValue,
-                                "size": _this.form.size,
-                                "company": _this.form.company,
-                                //携带CSRF，否则报错
-                                "csrfmiddlewaretoken": "{{ csrf_token }}"
-                            };
-                            let xhr = new XMLHttpRequest();
-                            let url = window.location.href;
-                            xhr.open('POST', url, true);
-                            xhr.setRequestHeader("Content-type", "application/json");
-                            xhr.setRequestHeader('X-CSRFToken', csrf);
-                            xhr.onreadystatechange = function () {
-                                if (xhr.readyState === 4 && (xhr.status === 200 || xhr.status === 304)) {
-                                    let res = eval(JSON.parse(xhr.responseText));
-                                    for (let i = 0; i < res.length; i++) {
-                                        _this.tableData.push(res[i].fields);
-                                        _this.pks.push(res[i].pk);
-                                    }
-                                }
-                            };
-                            xhr.send(JSON.stringify(data));
-                        } else {
-                            console.log('error submit!!');
-                            return false;
-                        }
-                    });
-                },
-                submitPrint() {
-                    let _this = this;
-                    let csrf = $('input[name="csrfmiddlewaretoken"]').val();
-
-                    let data = {
-                        "pks": _this.pks,
-                        //携带CSRF，否则报错
-                        "csrfmiddlewaretoken": "{{ csrf_token }}"
-                    };
-                    if (_this.pks.length === 0) {
-                        this.$message({message: '尚未生成有效数据', type: 'error'});
-                        return
-                    }
-                    let xhr = new XMLHttpRequest();
-                    let url = window.location.href + 'print/';
-                    xhr.open('POST', url, true);
-                    xhr.setRequestHeader("Content-type", "application/json");
-                    xhr.setRequestHeader('X-CSRFToken', csrf);
-                    xhr.responseType = "blob";
-                    xhr.onreadystatechange = function () {
-                        if (xhr.readyState === 4 && (xhr.status === 200 || xhr.status === 304)) {
-                            // ajax方式无法处理文件流，需要创建a标签并模拟点击
-                            var blob = xhr.response;
-                            console.log(xhr);
-                            var reader = new FileReader();
-                            reader.readAsDataURL(blob); // 转换为base64，可以直接放入a标签href
-                            reader.onload = function (e) {
-                                // 转换完成后创建a标签下载
-                                var a = document.createElement('a');
-                                a.download = "随机列表.xls";
-                                a.href = e.target.result;
-                                $("body").append(a);
-                                a.click();
-                                $(a).remove();
-                            }
-                        }
-                    };
-                    xhr.send(JSON.stringify(data));
-                },
-            },
+    <div v-for="(item,index) in tableDatas" style="margin-top: 50px">
+    {% verbatim %}
+                <div style=" margin-bottom: 10px">
+                    <span style="font-size: 20px!important;">第{{ index+1 }}场抽选结果</span>
+                    <span style="margin-left: 500px">
+                        <el-button type="primary" @click="submitPrint(index)">导出至excel</el-button>
+                    </span>
+                </div>
+                {% endverbatim %}
+    <el-table
+            :data="tableDatas[index]"
+            style="width: 100%;min-width: 700px"
+            stripe
+    >
+        <el-table-column
+                fixed
+                type="index"
+                label="id"
+                width="100">
+        </el-table-column>
+        <el-table-column
+                fixed
+                prop="spe_name"
+                label="姓名"
+                width="120">
+        </el-table-column>
+        <el-table-column
+                prop="spe_company"
+                label="工作单位"
+                width="250">
+        </el-table-column>
+        <el-table-column
+                prop="spe_title"
+                label="职称"
+                width="120">
+        </el-table-column>
+        <el-table-column
+                prop="spe_job"
+                label="职务"
+                width="120">
+        </el-table-column>
+        <el-table-column
+                prop="spe_station"
+                label="受聘岗位"
+                width="120">
+        </el-table-column>
+        <el-table-column
+                prop="spe_edu"
+                label="学历"
+                width="120">
+        </el-table-column>
+        <el-table-column
+                prop="spe_major.ctg_name"
+                label="专业"
+                width="350">
+        </el-table-column>
+        <el-table-column
+                prop="spe_ctg1.ctg_name"
+                label="所从事专业1"
+                width="350">
+        </el-table-column>
+        <el-table-column
+                prop="spe_ctg2.ctg_name"
+                label="所从事专业2"
+                width="350">
+        </el-table-column>
+        <el-table-column
+                fixed="right"
+                prop="spe_tel"
+                label="联系电话"
+                width="120">
+        </el-table-column>
+        <el-table-column
+                prop="spe_info"
+                label="备注"
+                width="120">
+        </el-table-column>
+    </el-table>
+        </div>
+</div>
+<script type="text/javascript">
+    $(".object-tools").hide().find('li a').each(function () {
+        _action.exts.push({
+            name: $(this).text(),
+            url: $(this).attr('href')
         })
-    </script>
-    <style>
-        #randomselect {
-            padding-top: 50px;
-            margin-left: 50px;
-        }
-    </style>
+    });
+    if (parent.addEvent) {
+        parent.addEvent('title', '随机抽取考官')
+    }
+    new Vue({
+        el: '#randomselect',
+        data: {
+            option: [],
+            forms: [{
+                selectedValue: "",
+                size: "",
+                company: null,
+            }],
+            tableData: [],
+            tableDatas:[],
+            pks: [],
+            pklist:[],
+        },
+        created: function () {
+            let _this = this;
+            let dic = {{dic | safe}};
+            let categories = dic.categories;
+            categories.forEach(function (c) {
+                _this.option.push({
+                    value: c,
+                    label: c,
+                })
+            });
+        },
+        methods: {
+            submitForm(formName) {
+                let _this = this;
+                _this.tableData = [];
+                _this.pks = [];
+                let csrf = $('input[name="csrfmiddlewaretoken"]').val();
+                let data = {
+                    "data":_this.forms,
+                    "csrfmiddlewaretoken": "{{ csrf_token }}"
+                };
+                let xhr = new XMLHttpRequest();
+                let url = window.location.href;
+                xhr.open('POST', url, true);
+                xhr.setRequestHeader("Content-type", "application/json");
+                xhr.setRequestHeader('X-CSRFToken', csrf);
+                xhr.onreadystatechange = function () {
+                    if (xhr.readyState === 4 && (xhr.status === 200 || xhr.status === 304)) {
+                        _this.tableDatas = JSON.parse(xhr.responseText);
+                    }
+                };
+                xhr.send(JSON.stringify(data));
+
+            },
+            submitPrint(index) {
+                let _this = this;
+                let csrf = $('input[name="csrfmiddlewaretoken"]').val();
+                let selectedTable = _this.tableDatas[index];
+                let selectedPk=[];
+                for(let i = 0;i<selectedTable.length;i++){
+                    selectedPk.push(selectedTable[i].id)
+                }
+                let data = {
+                    "pks": selectedPk,
+                    //携带CSRF，否则报错
+                    "csrfmiddlewaretoken": "{{ csrf_token }}"
+                };
+                if (selectedPk.length === 0) {
+                    this.$message({message: '尚未生成有效数据', type: 'error'});
+                    return
+                }
+                let xhr = new XMLHttpRequest();
+                let url = window.location.href + 'print/';
+                xhr.open('POST', url, true);
+                xhr.setRequestHeader("Content-type", "application/json");
+                xhr.setRequestHeader('X-CSRFToken', csrf);
+                xhr.responseType = "blob";
+                xhr.onreadystatechange = function () {
+                    if (xhr.readyState === 4 && (xhr.status === 200 || xhr.status === 304)) {
+                        // ajax方式无法处理文件流，需要创建a标签并模拟点击
+                        var blob = xhr.response;
+                        var reader = new FileReader();
+                        reader.readAsDataURL(blob); // 转换为base64，可以直接放入a标签href
+                        reader.onload = function (e) {
+                            // 转换完成后创建a标签下载
+                            var a = document.createElement('a');
+                            a.download = "第"+index+"场随机列表.xls";
+                            a.href = e.target.result;
+                            $("body").append(a);
+                            a.click();
+                            $(a).remove();
+                        }
+                    }
+                };
+                xhr.send(JSON.stringify(data));
+            },
+            addForm() {
+                let _this = this;
+                _this.forms.push({
+                selectedValue: "",
+                size: "",
+                company: null,
+            })
+            },
+            deleteForm(index) {
+                this.forms.splice(index, 1);
+            }
+        },
+    })
+</script>
+<style>
+    #randomselect {
+        padding-top: 50px;
+        margin-left: 50px;
+    }
+</style>
 {% endblock %}
